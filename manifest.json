@@ -2,9 +2,9 @@
   "sdkVersion": "1.0",
   "id": "live.starlight",
   "name": "星瞳 Live",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "hy.禾一",
-  "description": "AI 角色自主开播、野生 NPC 立绘捕捉、热搜吃瓜与打榜互动的虚拟直播平台。",
+  "description": "自主开播、野生立绘捕捉、仿小红书热搜吃瓜社区与主播创作者中心。",
   "icon": "icon.png",
   "entry": "index.html",
   "permissions": [
@@ -38,25 +38,7 @@
           "id": "live-share",
           "label": "分享直播间",
           "syntax": "[分享直播:主播名:直播标题:热度]",
-          "description": "向好友分享正在进行的直播间卡片。",
-          "card": {
-            "appLabel": "星瞳 Live",
-            "title": "📺 {{主播名}} 正在直播",
-            "subtitle": "LIVE STREAM",
-            "body": "“{{直播标题}}” · 🔥 热度 {{热度}}",
-            "status": "直播中",
-            "accentColor": "#ec4899",
-            "sections": [
-              {
-                "title": "直播信息",
-                "rows": [
-                  { "label": "主播", "value": "{{主播名}}" },
-                  { "label": "内容", "value": "{{直播标题}}" }
-                ]
-              }
-            ],
-            "actions": [{ "label": "进入直播间" }]
-          }
+          "description": "向好友分享正在进行的直播间卡片。"
         }
       ]
     }
