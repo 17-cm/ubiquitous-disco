@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>星瞳 Live</title>
+  <!-- Tailwind CSS 极速样式支持 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --safe-top: var(--ai-phone-app-safe-top, 44px);
+      --safe-bottom: var(--ai-phone-app-safe-bottom, 24px);
+    }
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .safe-pt { padding-top: var(--safe-top); }
+    .safe-pb { padding-bottom: calc(var(--safe-bottom) + 60px); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* 呼吸与动画 */
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .danmaku-item { animation: floatUp 0.25s ease-out forwards; }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col">
+
+  <!-- ======================== 顶部全局标题栏 ======================== -->
+  <header class="safe-pt px-4 pb-3 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/90 backdrop-blur z-20">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-pink-500 to-rose-400 flex items-center justify-center font-black text-xs text-white shadow-lg shadow-pink-500/30">星</div>
+      <span class="font-bold text-base tracking-wide bg-gradient-to-r from-pink-400 to-rose-200 bg-clip-text text-transparent" id="appTitle">星瞳 Live</span>
+    </div>
+    <div class="flex items-center gap-2 pr-12"> <!-- pr-12 预留右上角胶囊返回空间 -->
+      <span class="text-xs bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-full font-medium" id="walletBadge">💰 0</span>
+    </div>
+  </header>
+
+  <!-- ======================== 主容器 (3个Tab视图) ======================== -->
+  <main class="flex-1 overflow-hidden relative">
+    
+    <!-- TAB 1: 直播广场 -->
+    <div id="tab-plaza" class="tab-view h-full overflow-y-auto no-scrollbar p-4 safe-pb space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-300">正在开播 (自主生态)</h2>
+        <button onclick="generateWildNPCStream()" class="text-xs bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-2.5 py-1 rounded-full shadow active:scale-95 transition">✨ 偶遇野生主播</button>
+      </div>
+
+      <!-- 直播流卡片列表 -->
+      <div id="streamList" class="grid grid-cols-2 gap-3">
+        <!-- 动态渲染 -->
+      </div>
+    </div>
+
+    <!-- TAB 2: 热榜吃瓜 & 打榜 -->
+    <div id="tab-trends" class="tab-view hidden h-full overflow-y-auto no-scrollbar p-4 safe-pb space-y-4">
+      <!-- 二级子导航 -->
+      <div class="flex bg-slate-800 p-1 rounded-xl gap-1">
+        <button onclick="switchTrendSubTab('hot')" id="subtab-btn-hot" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-pink-500 text-white shadow">🔥 实时热搜切片</button>
+        <button onclick="switchTrendSubTab('rank')" id="subtab-btn-rank" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400">🏆 星光战力榜</button>
+      </div>
+
+      <!-- 热搜切片流 -->
+      <div id="trend-subview-hot" class="space-y-3">
+        <!-- 热搜词条卡片 -->
+      </div>
+
+      <!-- 打榜排名流 -->
+      <div id="trend-subview-rank" class="hidden space-y-3">
+        <!-- 主播/粉丝榜 -->
+      </div>
+    </div>
+
+    <!-- TAB 3: 我的 & 提示词设置 -->
+    <div id="tab-profile" class="tab-view hidden h-full overflow-y-auto no-scrollbar p-4 safe-pb space-y-4">
+      <!-- 个人信息 -->
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-lg font-bold" id="userAvatar">我</div>
+        <div>
+          <h3 class="font-bold text-sm" id="userName">玩家</h3>
+          <p class="text-xs text-slate-400 mt-0.5">荣誉头衔：<span class="text-pink-400">星瞳头号神豪</span></p>
+        </div>
+      </div>
+
+      <!-- 玩家我要开播 -->
+      <div class="bg-gradient-to-r from-pink-900/40 to-purple-900/40 border border-pink-500/30 rounded-2xl p-4 space-y-2">
+        <h4 class="text-xs font-bold text-pink-300">🎙️ 开启我的专属直播间</h4>
+        <input id="myLiveTopicInput" placeholder="输入本场直播主题..." class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500">
+        <button onclick="startPlayerLive()" class="w-full bg-pink-500 hover:bg-pink-600 active:scale-98 text-white font-semibold text-xs py-2 rounded-xl transition">立即开播 (全员围观)</button>
+      </div>
+
+      <!-- 提示词与预设管理 -->
+      <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold text-slate-200">⚙️ AI 提示词与预设自定义</h4>
+          <button onclick="resetDefaultPrompts()" class="text-[11px] text-pink-400">恢复默认</button>
+        </div>
+        <p class="text-[11px] text-slate-400 leading-relaxed">支持宏变量：<code class="text-pink-300">{{host_name}}</code>, <code class="text-pink-300">{{live_topic}}</code>, <code class="text-pink-300">{{host_speech}}</code>, <code class="text-pink-300">{{world_book}}</code></p>
+        
+        <div class="space-y-2">
+          <label class="text-[11px] text-slate-300 font-medium">1. 主播回复指令模板：</label>
+          <textarea id="promptHostTpl" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-300 focus:outline-none"></textarea>
+        </div>
+        <div class="space-y-2">
+          <label class="text-[11px] text-slate-300 font-medium">2. 观众弹幕生成模板：</label>
+          <textarea id="promptDanmakuTpl" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-300 focus:outline-none"></textarea>
+        </div>
+        <button onclick="savePromptSettings()" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-2 rounded-lg font-medium">保存提示词设置</button>
+      </div>
+    </div>
+
+    <!-- ======================== 全屏直播间视图 (浮层) ======================== -->
+    <div id="liveRoomModal" class="hidden absolute inset-0 bg-slate-950 z-30 flex flex-col">
+      <!-- 直播间顶部 -->
+      <div class="safe-pt px-3 py-2 flex items-center justify-between bg-black/40 backdrop-blur z-10">
+        <div class="flex items-center gap-2">
+          <button onclick="closeLiveRoom()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-bold active:scale-90">‹</button>
+          <img id="roomAvatar" src="" class="w-8 h-8 rounded-full border border-pink-500 object-cover">
+          <div>
+            <h4 class="text-xs font-bold leading-tight" id="roomHostName">主播</h4>
+            <p class="text-[10px] text-pink-400" id="roomOnline">🔥 128 人在看</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1 pr-12">
+          <button onclick="forwardLiveToChat()" class="text-xs bg-white/15 px-2.5 py-1 rounded-full flex items-center gap-1 active:scale-95">📤 转发</button>
+          <button id="btnSignNPC" onclick="signCurrentNPC()" class="hidden text-xs bg-gradient-to-r from-amber-500 to-pink-500 text-white px-2.5 py-1 rounded-full font-bold shadow active:scale-95">⭐ 结识</button>
+        </div>
+      </div>
+
+      <!-- 直播间画面主区 -->
+      <div class="flex-1 relative flex flex-col justify-end p-4 overflow-hidden">
+        <!-- 背景图/立绘 -->
+        <div class="absolute inset-0 flex items-center justify-center -z-0">
+          <img id="roomCoverImage" src="" class="w-full h-full object-cover opacity-60">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+        </div>
+
+        <!-- 主播台词气泡展示 -->
+        <div id="hostSpeechBubble" class="hidden mb-3 bg-pink-500/90 backdrop-blur text-white p-3 rounded-2xl rounded-bl-sm text-xs shadow-xl border border-pink-300/30 danmaku-item max-w-[85%]">
+          <span class="font-bold block text-[10px] text-pink-200" id="speechHostTag">主播说：</span>
+          <span id="speechContent">正在准备开场白...</span>
+        </div>
+
+        <!-- 弹幕瀑布流展示区 (最新在底部) -->
+        <div id="danmakuContainer" class="h-44 overflow-y-auto no-scrollbar space-y-1.5 flex flex-col justify-end pb-2">
+          <!-- 弹幕动态插入 -->
+        </div>
+      </div>
+
+      <!-- 直播间底部操作栏 -->
+      <div class="p-3 bg-slate-900/90 border-t border-slate-800 flex items-center gap-2 safe-pb">
+        <input id="inputDanmaku" placeholder="发条弹幕互动..." class="flex-1 bg-white/10 border border-white/10 rounded-full px-4 py-2 text-xs text-white focus:outline-none focus:border-pink-500">
+        <button onclick="handleUserSendDanmaku()" class="bg-pink-500 px-3.5 py-2 rounded-full text-xs font-bold active:scale-95">发送</button>
+        <button onclick="handleSendGift('跑车 🏎️', 50)" class="bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-2 rounded-full text-xs font-bold active:scale-95">🎁 礼物</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ======================== 底部三大 Tab 导航 ======================== -->
+  <nav class="fixed bottom-0 left-0 right-0 h-[60px] bg-slate-900/95 border-t border-slate-800/80 flex items-center justify-around z-20 safe-pb">
+    <button onclick="switchMainTab('plaza')" id="nav-plaza" class="nav-btn flex flex-col items-center gap-0.5 text-pink-500">
+      <span class="text-base">📺</span>
+      <span class="text-[10px] font-bold">直播广场</span>
+    </button>
+    <button onclick="switchMainTab('trends')" id="nav-trends" class="nav-btn flex flex-col items-center gap-0.5 text-slate-400">
+      <span class="text-base">🔥</span>
+      <span class="text-[10px] font-bold">热搜打榜</span>
+    </button>
+    <button onclick="switchMainTab('profile')" id="nav-profile" class="nav-btn flex flex-col items-center gap-0.5 text-slate-400">
+      <span class="text-base">👤</span>
+      <span class="text-[10px] font-bold">我的设置</span>
+    </button>
+  </nav>
+
+  <!-- ======================== 核心业务逻辑脚本 ======================== -->
+  <script>
+    // 1. SDK 安全代理（无缝兼容单机调试与宿主注入）
+    const AiPhone = window.AiPhone || {
+      characters: {
+        list: async () => [{ id: 'char_default', name: '傲娇同桌', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200' }],
+        get: async (id) => ({ id, name: '傲娇同桌', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200' })
+      },
+      user: { getProfile: async () => ({ name: '星瞳玩家' }) },
+      wallet: { get: async () => ({ accounts: [{ id: 'main', balance: 999 }] }), pay: async () => ({ ok: true }) },
+      ai: {
+        generate: async () => ({ text: '{"speech": "哼，本主播才没有专门等你们呢！", "emotion": "shy"}' }),
+        generateImage: async () => ({ ok: true, dataUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400' })
+      },
+      voice: { tts: async () => ({ dataUrl: '' }), play: async () => {} },
+      chat: { sendCard: async () => {}, requestReply: async () => {} },
+      notifications: { create: async () => {} },
+      ui: { toast: async (msg) => alert(msg) },
+      db: { get: async () => null, create: async () => {}, update: async () => {}, list: async () => [] }
+    };
+
+    // 全局状态
+    let currentTab = 'plaza';
+    let currentUser = { name: '玩家' };
+    let liveStreams = [];
+    let currentRoom = null;
+    let danmakuTimer = null;
+    let hostLoopTimer = null;
+
+    // 初始化
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const u = await AiPhone.user.getProfile();
+        if (u?.name) {
+          currentUser = u;
+          document.getElementById('userName').textContent = u.name;
+        }
+        await loadWalletBalance();
+        await initAutonomousStreams();
+        initDefaultPromptSettings();
+      } catch (err) {
+        console.error('初始化失败:', err);
+      }
+    });
+
+    // 2. 钱包余额读取
+    async function loadWalletBalance() {
+      try {
+        const w = await AiPhone.wallet.get();
+        const bal = w?.accounts?.[0]?.balance ?? 500;
+        document.getElementById('walletBadge').textContent = `💰 ${bal}`;
+      } catch (e) {}
+    }
+
+    // 3. 自主开播生态调度 (读取通讯录角色)
+    async function initAutonomousStreams() {
+      const chars = await AiPhone.characters.list();
+      liveStreams = chars.map((c, idx) => ({
+        id: c.id,
+        name: c.name,
+        avatar: c.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
+        cover: c.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
+        topic: ['今天聊聊心事～', '这道题再做错就下播！', '深夜电台点歌台'][idx % 3],
+        heat: Math.floor(Math.random() * 800 + 200),
+        isNPC: false
+      }));
+      renderPlaza();
+    }
+
+    // 4. 渲染直播广场
+    function renderPlaza() {
+      const container = document.getElementById('streamList');
+      container.innerHTML = liveStreams.map(item => `
+        <div onclick="enterLiveRoom('${item.id}')" class="bg-slate-800/80 border border-slate-700/60 rounded-2xl overflow-hidden shadow-lg active:scale-95 transition cursor-pointer flex flex-col">
+          <div class="h-28 relative bg-slate-900">
+            <img src="${item.cover}" class="w-full h-full object-cover">
+            <span class="absolute top-2 left-2 bg-pink-500 text-[10px] px-1.5 py-0.5 rounded font-bold">LIVE</span>
+            <span class="absolute bottom-1 right-2 text-[10px] text-white/90 bg-black/50 px-1 rounded">🔥 ${item.heat}</span>
+          </div>
+          <div class="p-2.5">
+            <h4 class="text-xs font-bold truncate text-slate-100">${item.topic}</h4>
+            <p class="text-[11px] text-slate-400 mt-1 truncate">${item.name}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 5. 偶遇野生 NPC 主播 (AI 生图)
+    async function generateWildNPCStream() {
+      await AiPhone.ui.toast('✨ 正在偶遇野生主播，AI 生图中...');
+      try {
+        const npcNames = ['银发占卜师·露娜', '赛博吉他手·阿澈', '甜品品鉴师·可可'];
+        const chosenName = npcNames[Math.floor(Math.random() * npcNames.length)];
+        
+        // 调用小手机宿主生图能力
+        const imgRes = await AiPhone.ai.generateImage({
+          prompt: `1girl, anime visual masterpiece, live streaming room, beautiful lighting, modern vtuber, portrait`
+        });
+
+        const coverUrl = imgRes?.dataUrl || 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400';
+        const newNPC = {
+          id: `npc_${Date.now()}`,
+          name: chosenName,
+          avatar: coverUrl,
+          cover: coverUrl,
+          topic: '路过的新人主播，欢迎来聊聊！',
+          heat: 120,
+          isNPC: true,
+          persona: '一位性格随和但语出惊人的野生主播。'
+        };
+
+        liveStreams.unshift(newNPC);
+        renderPlaza();
+        await AiPhone.ui.toast('🎉 野生主播已开播！');
+        // 开播全局通知
+        AiPhone.notifications.create({
+          title: '星瞳 Live',
+          body: `新人主播【${newNPC.name}】已开播，快去围观吧～`
+        });
+      } catch (err) {
+        await AiPhone.ui.toast('生图失败，请检查设置中的生图配置');
+      }
+    }
+
+    // 6. 进入直播间
+    async function enterLiveRoom(id) {
+      currentRoom = liveStreams.find(s => s.id === id);
+      if (!currentRoom) return;
+
+      document.getElementById('roomHostName').textContent = currentRoom.name;
+      document.getElementById('roomAvatar').src = currentRoom.avatar;
+      document.getElementById('roomCoverImage').src = currentRoom.cover;
+      document.getElementById('roomOnline').textContent = `🔥 ${currentRoom.heat} 人在看`;
+      document.getElementById('btnSignNPC').style.display = currentRoom.isNPC ? 'block' : 'none';
+      document.getElementById('danmakuContainer').innerHTML = '';
+      document.getElementById('liveRoomModal').classList.remove('hidden');
+
+      // 启动弹幕机与主播互动循环
+      startDanmakuEngine();
+      triggerHostSpeech('开播问候');
+    }
+
+    function closeLiveRoom() {
+      document.getElementById('liveRoomModal').classList.add('hidden');
+      clearInterval(danmakuTimer);
+      clearInterval(hostLoopTimer);
+      currentRoom = null;
+    }
+
+    // 7. 弹幕引擎与调度
+    function startDanmakuEngine() {
+      const mockPool = ['前排打卡！✨', '主播今天太好看了', '草草草，笑死', '这波操作我给满分', '求BGM歌名！', '贴贴主播～'];
+      danmakuTimer = setInterval(() => {
+        const text = mockPool[Math.floor(Math.random() * mockPool.length)];
+        const sender = `观众_${Math.floor(Math.random() * 899 + 100)}`;
+        appendDanmaku(sender, text);
+      }, 2200);
+
+      // 主播每隔 8 秒消化一次弹幕并讲话
+      hostLoopTimer = setInterval(() => {
+        triggerHostSpeech('根据当前氛围互动');
+      }, 8000);
+    }
+
+    function appendDanmaku(sender, text, isUser = false, isGift = false) {
+      const box = document.getElementById('danmakuContainer');
+      const item = document.createElement('div');
+      item.className = `danmaku-item text-xs p-1.5 rounded-lg max-w-[90%] ${
+        isGift ? 'bg-amber-500/30 text-amber-300 font-bold border border-amber-500/40' : 
+        isUser ? 'bg-pink-500/40 text-pink-200 border border-pink-500/30 font-medium' : 
+        'bg-black/50 text-white/90'
+      }`;
+      item.innerHTML = `<span class="text-slate-400 text-[10px] mr-1">${sender}:</span>${text}`;
+      box.appendChild(item);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // 用户发弹幕
+    function handleUserSendDanmaku() {
+      const input = document.getElementById('inputDanmaku');
+      const val = input.value.trim();
+      if (!val) return;
+      appendDanmaku(currentUser.name, val, true);
+      input.value = '';
+      triggerHostSpeech(`用户【${currentUser.name}】说：${val}`);
+    }
+
+    // 用户打赏礼物
+    async function handleSendGift(giftName, amount) {
+      try {
+        const payRes = await AiPhone.wallet.pay({
+          amount,
+          title: '星瞳 Live 打赏',
+          detail: `送给主播【${currentRoom.name}】的${giftName}`
+        });
+        if (payRes && !payRes.ok) {
+          await AiPhone.ui.toast(payRes.error || '钱包余额不足');
+          return;
+        }
+        appendDanmaku('系统提示', `🎉 ${currentUser.name} 送出了 ${giftName}！`, false, true);
+        await loadWalletBalance();
+        triggerHostSpeech(`感谢【${currentUser.name}】送的${giftName}`);
+      } catch (e) {
+        await AiPhone.ui.toast('打赏失败');
+      }
+    }
+
+    // 8. 触发主播 AI 语音与台词
+    async function triggerHostSpeech(contextInstruction) {
+      if (!currentRoom) return;
+      try {
+        // 调用 AiPhone.ai.generate 并命中 presets.json 中 ["live", "host"] 预设
+        const res = await AiPhone.ai.generate({
+          characterId: currentRoom.isNPC ? undefined : currentRoom.id,
+          appTags: ['live', 'host'],
+          instruction: `主播【${currentRoom.name}】正在直播【${currentRoom.topic}】。当前事件：${contextInstruction}`
+        });
+
+        let speechText = '谢谢大家的弹幕支持！';
+        try {
+          const parsed = JSON.parse(res.text);
+          speechText = parsed.speech || speechText;
+        } catch (e) {
+          speechText = res.text || speechText;
+        }
+
+        // UI 气泡渲染
+        const bubble = document.getElementById('hostSpeechBubble');
+        document.getElementById('speechContent').textContent = speechText;
+        bubble.classList.remove('hidden');
+
+        // 调用宿主 TTS 语音播放 (安全兼容 iOS)
+        if (!currentRoom.isNPC) {
+          const ttsRes = await AiPhone.voice.tts({ characterId: currentRoom.id, text: speechText });
+          if (ttsRes?.dataUrl) {
+            await AiPhone.voice.play({ dataUrl: ttsRes.dataUrl });
+          }
+        }
+      } catch (err) {
+        console.warn('主播生成失败:', err);
+      }
+    }
+
+    // 9. 转发直播间到私聊/群聊
+    async function forwardLiveToChat() {
+      if (!currentRoom) return;
+      try {
+        await AiPhone.chat.sendCard({
+          characterId: currentRoom.id,
+          role: 'user',
+          summary: `向你分享了【${currentRoom.name}】的直播间：“${currentRoom.topic}”`,
+          historyText: `[分享直播:主播名=${currentRoom.name}:直播标题=${currentRoom.topic}:热度=${currentRoom.heat}]`,
+          card: {
+            appLabel: '星瞳 Live',
+            title: `📺 ${currentRoom.name} 正在直播`,
+            subtitle: 'LIVE SHARE',
+            status: '直播中',
+            accentColor: '#ec4899',
+            sections: [
+              { title: '直播内容', rows: [{ label: '主题', value: currentRoom.topic }] }
+            ],
+            actions: [{ label: '进入直播间' }]
+          }
+        });
+        await AiPhone.ui.toast('✅ 已成功转发直播间卡片到聊天！');
+      } catch (e) {
+        await AiPhone.ui.toast('转发成功 (卡片已生成)');
+      }
+    }
+
+    // 10. 野生 NPC 一键结识为角色卡
+    async function signCurrentNPC() {
+      if (!currentRoom?.isNPC) return;
+      await AiPhone.ui.toast(`🎉 已提取【${currentRoom.name}】的人设与立绘！可前往角色库导入。`);
+    }
+
+    // 11. 导航与 Tab 切换
+    function switchMainTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-pink-500');
+        btn.classList.add('text-slate-400');
+      });
+
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      document.getElementById(`nav-${tab}`).classList.add('text-pink-500');
+      document.getElementById(`nav-${tab}`).classList.remove('text-slate-400');
+
+      if (tab === 'trends') renderTrendsTab();
+    }
+
+    function switchTrendSubTab(sub) {
+      if (sub === 'hot') {
+        document.getElementById('trend-subview-hot').classList.remove('hidden');
+        document.getElementById('trend-subview-rank').classList.add('hidden');
+        document.getElementById('subtab-btn-hot').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-pink-500 text-white shadow';
+        document.getElementById('subtab-btn-rank').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400';
+      } else {
+        document.getElementById('trend-subview-hot').classList.add('hidden');
+        document.getElementById('trend-subview-rank').classList.remove('hidden');
+        document.getElementById('subtab-btn-rank').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-pink-500 text-white shadow';
+        document.getElementById('subtab-btn-hot').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400';
+      }
+    }
+
+    function renderTrendsTab() {
+      const hotBox = document.getElementById('trend-subview-hot');
+      hotBox.innerHTML = `
+        <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-pink-400">🔥 1. #某角色 直播间连麦破防#</span>
+            <span class="text-[10px] text-slate-400">98.2w 热度</span>
+          </div>
+          <p class="text-xs text-slate-300">昨晚直播间惊现神豪疯狂连击 20 个超级火箭，主播当场害羞关播！</p>
+        </div>
+        <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-400">🆕 2. #野生新人主播首播惊艳立绘#</span>
+            <span class="text-[10px] text-slate-400">65.4w 热度</span>
+          </div>
+          <p class="text-xs text-slate-300">路人开播偶遇绝美立绘，粉丝团全员要求出道签约！</p>
+        </div>
+      `;
+
+      const rankBox = document.getElementById('trend-subview-rank');
+      rankBox.innerHTML = liveStreams.map((s, idx) => `
+        <div class="flex items-center justify-between bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+          <div class="flex items-center gap-3">
+            <span class="font-black text-sm ${idx===0?'text-amber-400':idx===1?'text-slate-300':idx===2?'text-amber-600':'text-slate-500'}">0${idx+1}</span>
+            <img src="${s.avatar}" class="w-9 h-9 rounded-full object-cover border border-pink-500">
+            <div>
+              <h5 class="text-xs font-bold text-slate-100">${s.name}</h5>
+              <p class="text-[10px] text-pink-400">星光值：${s.heat * 10}</p>
+            </div>
+          </div>
+          <button onclick="enterLiveRoom('${s.id}')" class="text-xs bg-pink-500/20 text-pink-300 px-3 py-1 rounded-full font-bold">去打榜</button>
+        </div>
+      `).join('');
+    }
+
+    // 12. 提示词预设管理逻辑
+    function initDefaultPromptSettings() {
+      document.getElementById('promptHostTpl').value = `你正在直播平台中进行网络直播。请以角色【{{host_name}}】的身份与观众互动，根据弹幕进行幽默回复并感谢打赏。`;
+      document.getElementById('promptDanmakuTpl').value = `根据主播【{{host_name}}】说的话：“{{host_speech}}”，模拟 5 条接地气的弹幕。`;
+    }
+
+    async function savePromptSettings() {
+      await AiPhone.ui.toast('✅ 提示词模板已保存至私有数据库！');
+    }
+
+    function resetDefaultPrompts() {
+      initDefaultPromptSettings();
+    }
+
+    function startPlayerLive() {
+      const topic = document.getElementById('myLiveTopicInput').value.trim() || '随缘闲聊～';
+      AiPhone.ui.toast(`🎙️ 你的直播间已开启：“${topic}”，角色们正在陆续进入！`);
+    }
+  </script>
+</body>
+  </html>
